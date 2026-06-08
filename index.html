@@ -194,7 +194,9 @@ tr:last-child td { border-bottom: none; }
     o.id = 'mb-admin-gate';
     o.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px;';
     o.innerHTML = '<div style="max-width:420px;width:100%;text-align:center;background:#1e293b;border:1px solid #334155;border-radius:16px;padding:40px 32px;box-shadow:0 20px 60px rgba(0,0,0,0.4);">' + inner + '</div>';
-    document.body.appendChild(o);
+    // Attach to <html>, not <body>: the body is `display:none !important` until an
+    // employee is verified, which would hide this sign-in/denied screen too.
+    document.documentElement.appendChild(o);
   }
   window.__mbSignIn = function() {
     sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } });
