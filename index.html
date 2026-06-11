@@ -201,7 +201,10 @@ tr:last-child td { border-bottom: none; }
   window.__mbSignIn = function() {
     sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } });
   };
-  window.__mbSignOut = function() { sb.auth.signOut().then(function(){ location.reload(); }); };
+  window.__mbSignOut = function() {
+    try { sb.auth.signOut().finally(function(){ location.replace(location.pathname); }); }
+    catch (e) { location.replace(location.pathname); }
+  };
 
   const { data: { session } } = await sb.auth.getSession();
   if (!session) {
@@ -272,7 +275,7 @@ tr:last-child td { border-bottom: none; }
     </div>
     
   </div>
-  <button class="btn-logout-emp" onclick="if(confirm('Sign out?')){window.location.href='mogulbay-signup.html';}">
+  <button class="btn-logout-emp" onclick="if(confirm('Sign out?')){window.__mbSignOut();}">
     <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75">
       <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>
       <polyline points="11 11 14 8 11 5"/>
