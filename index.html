@@ -273,7 +273,11 @@ tr:last-child td { border-bottom: none; }
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 13V3h3l2 3h8v7H1z"/><circle cx="11" cy="9" r="1.5"/></svg>
       Marketing
     </div>
-    
+    <div class="nav-item" onclick="showPage('blog', this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1.5h7l3 3V14a.5.5 0 0 1-.5.5h-9A.5.5 0 0 1 3 14z"/><path d="M9.5 1.5V5h3.5"/><line x1="5.5" y1="8" x2="10.5" y2="8"/><line x1="5.5" y1="10.5" x2="10.5" y2="10.5"/></svg>
+      Blog
+    </div>
+
   </div>
   <button class="btn-logout-emp" onclick="if(confirm('Sign out?')){window.__mbSignOut();}">
     <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75">
@@ -287,6 +291,102 @@ tr:last-child td { border-bottom: none; }
 </div>
 
 <div class="main">
+
+  <!-- BLOG -->
+  <div class="page" id="page-blog">
+    <div class="topbar">
+      <div><div class="page-title">Blog</div><div class="page-sub">Manage posts on mogulbay.com/blog &middot; publishing is instant, no deploy</div></div>
+      <div class="live-badge" style="background:#eff6ff;color:#1d4ed8"><span id="blog-count">&mdash;</span> posts</div>
+    </div>
+
+    <!-- LIST VIEW -->
+    <div id="blog-list-view">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap">
+        <input id="blog-search" oninput="renderBlogList()" placeholder="Search posts&hellip;" style="flex:1;min-width:220px;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+        <button onclick="newBlogPost()" style="padding:9px 16px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">+ New post</button>
+      </div>
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#f8fafc;text-align:left;color:#64748b">
+            <th style="padding:11px 16px;font-weight:600">Title</th>
+            <th style="padding:11px 16px;font-weight:600">Category</th>
+            <th style="padding:11px 16px;font-weight:600">Status</th>
+            <th style="padding:11px 16px;font-weight:600">Published</th>
+            <th style="padding:11px 16px;font-weight:600;text-align:right">Actions</th>
+          </tr></thead>
+          <tbody id="blog-tbody"><tr><td colspan="5" style="padding:22px;text-align:center;color:#94a3b8">Loading&hellip;</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EDITOR VIEW -->
+    <div id="blog-editor-view" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <button onclick="closeBlogEditor()" style="padding:8px 14px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">&larr; Back to list</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="blog-editor-status-pill"></span>
+          <button id="blog-delete-btn" onclick="deleteBlogPost()" style="display:none;padding:9px 14px;background:#fff;color:#dc2626;border:1px solid #fecaca;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Delete</button>
+          <button onclick="saveBlogPost()" id="blog-save-btn" style="padding:9px 18px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Save</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+        <!-- FORM -->
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;display:grid;gap:14px">
+          <label style="font-size:12px;font-weight:600;color:#475569">Status
+            <select id="bf-status" onchange="updateBlogStatusPill()" style="display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+              <option value="draft">Draft (not public)</option>
+              <option value="published">Published (live)</option>
+            </select>
+          </label>
+          <label style="font-size:12px;font-weight:600;color:#475569">Title
+            <input id="bf-title" oninput="onBlogTitleInput()" style="display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+          </label>
+          <label style="font-size:12px;font-weight:600;color:#475569">Slug (URL) <span style="font-weight:400;color:#94a3b8">mogulbay.com/blog/&hellip;</span>
+            <input id="bf-slug" style="display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:monospace">
+          </label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <label style="font-size:12px;font-weight:600;color:#475569">Category
+              <input id="bf-category" list="bf-cat-list" style="display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+              <datalist id="bf-cat-list"><option>Retirement</option><option>Net worth</option><option>Financial independence</option><option>Comparisons</option><option>Tools &amp; comparisons</option></datalist>
+            </label>
+            <label style="font-size:12px;font-weight:600;color:#475569">Read time
+              <input id="bf-readtime" placeholder="8 min read" style="display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+            </label>
+          </div>
+          <label style="font-size:12px;font-weight:600;color:#475569">Cover image URL <span style="font-weight:400;color:#94a3b8">e.g. /assets/images/blogs/blog1.webp</span>
+            <input id="bf-cover" style="display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:monospace">
+          </label>
+          <label style="font-size:12px;font-weight:600;color:#475569">Cover image alt text
+            <input id="bf-cover-alt" style="display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+          </label>
+          <label style="font-size:12px;font-weight:600;color:#475569">Meta description <span style="font-weight:400;color:#94a3b8">(SEO, ~155 chars)</span>
+            <textarea id="bf-meta" rows="2" oninput="bfMetaCount()" style="display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;resize:vertical"></textarea>
+            <span id="bf-meta-count" style="font-size:11px;color:#94a3b8"></span>
+          </label>
+          <label style="font-size:12px;font-weight:600;color:#475569">Key takeaways <span style="font-weight:400;color:#94a3b8">(one per line, optional)</span>
+            <textarea id="bf-takeaways" rows="3" style="display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;resize:vertical"></textarea>
+          </label>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:5px">Article body</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+              <button type="button" onclick="mdInsert('heading')" style="padding:5px 9px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600">H2</button>
+              <button type="button" onclick="mdInsert('bold')" style="padding:5px 9px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700">B</button>
+              <button type="button" onclick="mdInsert('list')" style="padding:5px 9px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;cursor:pointer">&bull; List</button>
+              <button type="button" onclick="mdInsert('table')" style="padding:5px 9px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;cursor:pointer">Table</button>
+              <button type="button" onclick="mdInsert('callout')" style="padding:5px 9px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;cursor:pointer">Callout</button>
+              <button type="button" onclick="mdInsert('link')" style="padding:5px 9px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;cursor:pointer">Link</button>
+            </div>
+            <textarea id="bf-content" oninput="renderBlogPreview()" rows="20" style="display:block;width:100%;padding:11px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:ui-monospace,Menlo,monospace;line-height:1.6;resize:vertical"></textarea>
+          </div>
+        </div>
+        <!-- LIVE PREVIEW -->
+        <div style="position:sticky;top:20px">
+          <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px">Live preview</div>
+          <div id="bf-preview" style="background:#fafafa;border:1px solid #e2e8f0;border-radius:12px;padding:22px;max-height:78vh;overflow:auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- OVERVIEW -->
   <div class="page active" id="page-overview">
@@ -1539,6 +1639,7 @@ function showPage(id, el) {
     if (id === "infrastructure") { fetchInfrastructureData(); }
     if (id === "support") { loadAdminTickets(); }
     if (id === "terms") { loadTermsVersions(); }
+    if (id === "blog") { loadBlogPosts(); }
   }
 
 const months = ['Jan','Feb','Mar','Apr','May','Jun'];
@@ -3407,6 +3508,231 @@ window.outreachLogPage = outreachLogPage;
     <div id="termsCards"></div>
   </div>
 </div>
+<style>
+#bf-preview{font-family:'Poppins',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;color:#4f5c6f;line-height:1.7;font-size:15px}
+#bf-preview .b-chip{display:inline-block;padding:5px 10px;border-radius:999px;background:#e8f1ff;color:#0d55d9;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+#bf-preview h1{font-size:1.9rem;font-weight:800;color:#111827;line-height:1.1;letter-spacing:-.03em;margin:12px 0 12px}
+#bf-preview .b-dek{color:#4f5c6f;font-size:1rem;margin:0 0 20px}
+#bf-preview .b-cover{width:100%;border-radius:16px;border:1px solid #e7eaf0;margin:0 0 24px;display:block;aspect-ratio:16/9;object-fit:cover;background:#eef2f8}
+#bf-preview .b-take{margin:0 0 26px;padding:18px 20px;border:1px solid #d8e6fb;border-radius:16px;background:#fff}
+#bf-preview .b-take .l{display:block;color:#155dfc;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+#bf-preview .b-take ul{list-style:none;padding:0;margin:0;display:grid;gap:9px}
+#bf-preview .b-take li{position:relative;padding-left:28px;color:#3f4b5d;font-size:.95rem;font-weight:500}
+#bf-preview .b-take li::before{position:absolute;left:0;top:0;content:"\2713";color:#155dfc;font-weight:800}
+#bf-preview h2{font-size:1.5rem;font-weight:780;color:#111827;letter-spacing:-.02em;margin:1.8rem 0 .8rem}
+#bf-preview h3{font-size:1.2rem;font-weight:760;color:#111827;margin:1.4rem 0 .5rem}
+#bf-preview p{margin:0 0 1rem;line-height:1.8}
+#bf-preview strong{color:#111827}
+#bf-preview a{color:#155dfc}
+#bf-preview ul,#bf-preview ol{margin:1.1rem 0;padding:0;list-style:none;display:grid;gap:9px}
+#bf-preview li{position:relative;padding:12px 14px 12px 40px;border:1px solid #e7eaf0;border-radius:12px;background:#fff;color:#475467;font-size:.95rem}
+#bf-preview ul li::before{position:absolute;left:13px;top:12px;content:"\2713";color:#155dfc;font-weight:800;font-size:.85rem}
+#bf-preview ol{counter-reset:bli}
+#bf-preview ol li{counter-increment:bli}
+#bf-preview ol li::before{position:absolute;left:13px;top:12px;content:counter(bli);color:#155dfc;font-weight:800;font-size:.8rem}
+#bf-preview blockquote{margin:1.6rem 0;padding:18px 20px;border:1px solid #d8e6fb;border-radius:14px;background:#fff;color:#667085}
+#bf-preview blockquote strong{display:block;margin-bottom:5px;font-weight:800;color:#111827}
+#bf-preview .b-tw{margin:1.4rem 0;overflow-x:auto;border:1px solid #e7eaf0;border-radius:14px;background:#fff}
+#bf-preview table{width:100%;border-collapse:collapse;text-align:left}
+#bf-preview th,#bf-preview td{padding:12px 14px;border-bottom:1px solid #e7eaf0;color:#596579;font-size:.85rem}
+#bf-preview thead th{background:#f6f8fb;color:#7d8797;font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+#bf-preview tbody th{color:#111827;font-weight:750}
+#bf-preview .b-empty{color:#94a3b8;font-style:italic}
+</style>
+<script>
+/* ===== Blog management (writes go through the authenticated staff Supabase session;
+   RLS restricts INSERT/UPDATE/DELETE to @mogulbay.com JWTs). ===== */
+(function(){
+  window.__blogPosts = [];
+  window.__blogEditingId = null;
+
+  function sb(){ return window.__supabase; }
+  function bEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function slugify(s){ return String(s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80); }
+  function fmtD(s){ if(!s) return '—'; try{ return new Date(s).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});}catch(e){return '—';} }
+
+  // --- Markdown subset renderer (mirrors the public blog.js so preview matches live) ---
+  function inl(t){
+    t=t.replace(/`([^`]+)`/g,'<code>$1</code>');
+    t=t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,function(_m,x,u){ if(!/^(https?:\/\/|mailto:|\/)/i.test(u)) return x; return '<a href="'+u+'" rel="noopener">'+x+'</a>'; });
+    t=t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+    t=t.replace(/__([^_]+)__/g,'<strong>$1</strong>');
+    t=t.replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>');
+    return t;
+  }
+  function isRow(l){ return /^\s*\|.*\|\s*$/.test(l); }
+  function isSep(l){ return /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(l); }
+  function splitRow(l){ return l.trim().replace(/^\|/,'').replace(/\|\s*$/,'').split('|').map(function(c){return c.trim();}); }
+  function mdToHtml(src){
+    src=String(src||'').replace(/\r\n?/g,'\n');
+    var lines=src.split('\n'), out=[], i=0;
+    var special=function(l){ return /^\s*$/.test(l)||/^#{1,6}\s/.test(l)||/^\s*[-*+]\s/.test(l)||/^\s*\d+\.\s/.test(l)||/^\s*>/.test(l)||/^\s*([-*_])\1{2,}\s*$/.test(l)||isRow(l); };
+    while(i<lines.length){
+      var line=lines[i];
+      if(/^\s*$/.test(line)){ i++; continue; }
+      if(isRow(line)&&i+1<lines.length&&isSep(lines[i+1])){
+        var hs=splitRow(line); i+=2; var rows=[];
+        while(i<lines.length&&isRow(lines[i])){ rows.push(splitRow(lines[i])); i++; }
+        var th='<thead><tr>'+hs.map(function(h){return '<th>'+inl(bEsc(h))+'</th>';}).join('')+'</tr></thead>';
+        var tb='<tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c,idx){return idx===0?'<th>'+inl(bEsc(c))+'</th>':'<td>'+inl(bEsc(c))+'</td>';}).join('')+'</tr>';}).join('')+'</tbody>';
+        out.push('<div class="b-tw"><table>'+th+tb+'</table></div>'); continue;
+      }
+      var h=line.match(/^(#{1,6})\s+(.*)$/);
+      if(h){ var lv=Math.min(h[1].length,6); out.push('<h'+lv+'>'+inl(bEsc(h[2].trim()))+'</h'+lv+'>'); i++; continue; }
+      if(/^\s*([-*_])\1{2,}\s*$/.test(line)){ out.push('<hr>'); i++; continue; }
+      if(/^\s*>/.test(line)){ var bq=[]; while(i<lines.length&&/^\s*>/.test(lines[i])){ bq.push(lines[i].replace(/^\s*>\s?/,'')); i++; } out.push('<blockquote>'+inl(bEsc(bq.join(' ')))+'</blockquote>'); continue; }
+      if(/^\s*[-*+]\s+/.test(line)){ var ul=[]; while(i<lines.length&&/^\s*[-*+]\s+/.test(lines[i])){ ul.push('<li>'+inl(bEsc(lines[i].replace(/^\s*[-*+]\s+/,'')))+'</li>'); i++; } out.push('<ul>'+ul.join('')+'</ul>'); continue; }
+      if(/^\s*\d+\.\s+/.test(line)){ var ol=[]; while(i<lines.length&&/^\s*\d+\.\s+/.test(lines[i])){ ol.push('<li>'+inl(bEsc(lines[i].replace(/^\s*\d+\.\s+/,'')))+'</li>'); i++; } out.push('<ol>'+ol.join('')+'</ol>'); continue; }
+      var para=[]; while(i<lines.length&&!special(lines[i])){ para.push(lines[i]); i++; }
+      out.push('<p>'+inl(bEsc(para.join('\n')).replace(/\n/g,'<br>'))+'</p>');
+    }
+    return out.join('\n');
+  }
+
+  // --- List ---
+  window.loadBlogPosts = async function(){
+    var tb=document.getElementById('blog-tbody');
+    try{
+      var res=await sb().from('blog_posts').select('*').order('published_at',{ascending:false,nullsFirst:false});
+      if(res.error) throw res.error;
+      window.__blogPosts=res.data||[];
+      var c=document.getElementById('blog-count'); if(c) c.textContent=window.__blogPosts.length;
+      renderBlogList();
+    }catch(e){ if(tb) tb.innerHTML='<tr><td colspan="5" style="padding:22px;text-align:center;color:#dc2626">Could not load posts: '+bEsc(e.message||e)+'</td></tr>'; }
+  };
+  window.renderBlogList = function(){
+    var tb=document.getElementById('blog-tbody'); if(!tb) return;
+    var q=(document.getElementById('blog-search')||{}).value||''; q=q.toLowerCase();
+    var rows=window.__blogPosts.filter(function(p){ return !q||(p.title||'').toLowerCase().indexOf(q)>=0||(p.slug||'').toLowerCase().indexOf(q)>=0; });
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="5" style="padding:22px;text-align:center;color:#94a3b8">No posts found.</td></tr>'; return; }
+    tb.innerHTML=rows.map(function(p){
+      var pub=p.status==='published';
+      var badge='<span style="padding:2px 9px;border-radius:8px;font-size:11px;font-weight:600;background:'+(pub?'#dcfce7':'#f1f5f9')+';color:'+(pub?'#15803d':'#64748b')+'">'+(pub?'Published':'Draft')+'</span>';
+      return '<tr style="border-top:1px solid #f1f5f9">'
+        +'<td style="padding:11px 16px"><div style="font-weight:600;color:#1e293b">'+bEsc(p.title||'—')+'</div><div style="font-size:11px;color:#94a3b8;font-family:monospace">/'+bEsc(p.slug||'')+'</div></td>'
+        +'<td style="padding:11px 16px;color:#64748b">'+bEsc(p.category||'—')+'</td>'
+        +'<td style="padding:11px 16px">'+badge+'</td>'
+        +'<td style="padding:11px 16px;color:#64748b">'+fmtD(p.published_at)+'</td>'
+        +'<td style="padding:11px 16px;text-align:right;white-space:nowrap">'
+          +'<button onclick="toggleBlogPublish(\''+p.id+'\')" style="padding:4px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:'+(pub?'#b45309':'#15803d')+'">'+(pub?'Unpublish':'Publish')+'</button> '
+          +'<button onclick="editBlogPost(\''+p.id+'\')" style="padding:4px 10px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Edit</button>'
+        +'</td></tr>';
+    }).join('');
+  };
+
+  // --- Editor ---
+  function setField(id,v){ var el=document.getElementById(id); if(el) el.value=(v==null?'':v); }
+  function getField(id){ var el=document.getElementById(id); return el?el.value:''; }
+  function openEditor(){ document.getElementById('blog-list-view').style.display='none'; document.getElementById('blog-editor-view').style.display='block'; updateBlogStatusPill(); bfMetaCount(); renderBlogPreview(); }
+  window.closeBlogEditor = function(){ document.getElementById('blog-editor-view').style.display='none'; document.getElementById('blog-list-view').style.display='block'; };
+  window.newBlogPost = function(){
+    window.__blogEditingId=null;
+    ['bf-title','bf-slug','bf-category','bf-readtime','bf-cover','bf-cover-alt','bf-meta','bf-takeaways','bf-content'].forEach(function(id){ setField(id,''); });
+    setField('bf-status','draft');
+    document.getElementById('blog-delete-btn').style.display='none';
+    openEditor();
+  };
+  window.editBlogPost = function(id){
+    var p=window.__blogPosts.find(function(x){return x.id===id;}); if(!p) return;
+    window.__blogEditingId=id;
+    setField('bf-title',p.title); setField('bf-slug',p.slug); setField('bf-category',p.category);
+    setField('bf-readtime',p.read_time); setField('bf-cover',p.cover_image); setField('bf-cover-alt',p.cover_image_alt);
+    setField('bf-meta',p.meta_description); setField('bf-content',p.content_md); setField('bf-status',p.status||'draft');
+    setField('bf-takeaways',Array.isArray(p.takeaways)?p.takeaways.join('\n'):'');
+    document.getElementById('blog-delete-btn').style.display='inline-block';
+    openEditor();
+  };
+  window.onBlogTitleInput = function(){
+    // auto-fill slug from title only while creating a brand-new post with an empty slug
+    if(window.__blogEditingId) return;
+    var slugEl=document.getElementById('bf-slug');
+    if(slugEl && (!slugEl.value || slugEl.dataset.auto==='1')){ slugEl.value=slugify(getField('bf-title')); slugEl.dataset.auto='1'; }
+  };
+  window.updateBlogStatusPill = function(){
+    var s=getField('bf-status'); var el=document.getElementById('blog-editor-status-pill');
+    var pub=s==='published';
+    el.innerHTML='<span style="padding:3px 10px;border-radius:8px;font-size:11px;font-weight:600;background:'+(pub?'#dcfce7':'#fef9c3')+';color:'+(pub?'#15803d':'#854d0e')+'">'+(pub?'Will be LIVE':'Draft')+'</span>';
+  };
+  window.bfMetaCount = function(){ var el=document.getElementById('bf-meta-count'); if(el) el.textContent=getField('bf-meta').length+' chars'; };
+
+  window.mdInsert = function(kind){
+    var ta=document.getElementById('bf-content'); if(!ta) return;
+    var snips={ heading:'\n## Section heading\n\n', bold:'**bold text**', list:'\n- First point\n- Second point\n- Third point\n', table:'\n| Column A | Column B |\n| --- | --- |\n| Row 1 | value |\n| Row 2 | value |\n', callout:'\n> **Callout title** Your highlighted note goes here.\n', link:'[link text](https://mogulbay.com)' };
+    var s=snips[kind]||''; var st=ta.selectionStart||0, en=ta.selectionEnd||0;
+    ta.value=ta.value.slice(0,st)+s+ta.value.slice(en);
+    ta.focus(); ta.selectionStart=ta.selectionEnd=st+s.length;
+    renderBlogPreview();
+  };
+
+  window.renderBlogPreview = function(){
+    var box=document.getElementById('bf-preview'); if(!box) return;
+    var cat=getField('bf-category'), title=getField('bf-title'), meta=getField('bf-meta'),
+        cover=getField('bf-cover'), coverAlt=getField('bf-cover-alt'),
+        tks=getField('bf-takeaways').split('\n').map(function(x){return x.trim();}).filter(Boolean),
+        body=getField('bf-content');
+    var coverSrc=cover; if(cover && cover.charAt(0)==='/') coverSrc='https://mogulbay.com'+cover;
+    var html='';
+    if(cat) html+='<span class="b-chip">'+bEsc(cat)+'</span>';
+    html+='<h1>'+(bEsc(title)||'<span class="b-empty">Untitled post</span>')+'</h1>';
+    if(meta) html+='<p class="b-dek">'+bEsc(meta)+'</p>';
+    if(cover) html+='<img class="b-cover" src="'+bEsc(coverSrc)+'" alt="'+bEsc(coverAlt||title)+'" onerror="this.style.display=\'none\'">';
+    if(tks.length){ html+='<div class="b-take"><span class="l">Key takeaways</span><ul>'+tks.map(function(t){return '<li>'+bEsc(t)+'</li>';}).join('')+'</ul></div>'; }
+    html+=body.trim()?mdToHtml(body):'<p class="b-empty">Start writing the article body&hellip;</p>';
+    box.innerHTML=html;
+  };
+
+  // --- Save / delete / toggle ---
+  window.saveBlogPost = async function(){
+    var btn=document.getElementById('blog-save-btn'); var orig=btn.textContent;
+    var title=getField('bf-title').trim(), slug=slugify(getField('bf-slug'))||slugify(title), content=getField('bf-content');
+    if(!title){ alert('Title is required.'); return; }
+    if(!slug){ alert('Slug is required.'); return; }
+    if(!content.trim()){ alert('Article body is required.'); return; }
+    var tks=getField('bf-takeaways').split('\n').map(function(x){return x.trim();}).filter(Boolean);
+    var rec={ title:title, slug:slug, meta_description:getField('bf-meta').trim()||null,
+      content_md:content, category:getField('bf-category').trim()||null,
+      read_time:getField('bf-readtime').trim()||null, cover_image:getField('bf-cover').trim()||null,
+      cover_image_alt:getField('bf-cover-alt').trim()||null, takeaways:tks.length?tks:null,
+      status:getField('bf-status'), updated_at:new Date().toISOString() };
+    btn.disabled=true; btn.textContent='Saving…';
+    try{
+      var res;
+      if(window.__blogEditingId){
+        // preserve original published_at; only set it if publishing a post that never had one
+        var cur=window.__blogPosts.find(function(x){return x.id===window.__blogEditingId;})||{};
+        if(rec.status==='published' && !cur.published_at) rec.published_at=new Date().toISOString();
+        res=await sb().from('blog_posts').update(rec).eq('id',window.__blogEditingId).select();
+      }else{
+        if(rec.status==='published') rec.published_at=new Date().toISOString();
+        res=await sb().from('blog_posts').insert(rec).select();
+      }
+      if(res.error) throw res.error;
+      btn.textContent='Saved ✓';
+      await loadBlogPosts();
+      setTimeout(function(){ btn.disabled=false; btn.textContent=orig; closeBlogEditor(); },500);
+    }catch(e){
+      btn.disabled=false; btn.textContent=orig;
+      alert('Save failed: '+(e.message||e)+(String(e.message||'').indexOf('duplicate')>=0?'\n\nThat slug is already used by another post.':''));
+    }
+  };
+  window.deleteBlogPost = async function(){
+    if(!window.__blogEditingId) return;
+    var p=window.__blogPosts.find(function(x){return x.id===window.__blogEditingId;})||{};
+    if(!confirm('Delete "'+(p.title||'this post')+'"? This removes it from the live site and cannot be undone.')) return;
+    try{ var res=await sb().from('blog_posts').delete().eq('id',window.__blogEditingId); if(res.error) throw res.error; await loadBlogPosts(); closeBlogEditor(); }
+    catch(e){ alert('Delete failed: '+(e.message||e)); }
+  };
+  window.toggleBlogPublish = async function(id){
+    var p=window.__blogPosts.find(function(x){return x.id===id;}); if(!p) return;
+    var next=p.status==='published'?'draft':'published';
+    if(next==='published' && !confirm('Publish "'+(p.title||'')+'" to the live site now?')) return;
+    var patch={ status:next, updated_at:new Date().toISOString() };
+    if(next==='published' && !p.published_at) patch.published_at=new Date().toISOString();
+    try{ var res=await sb().from('blog_posts').update(patch).eq('id',id); if(res.error) throw res.error; await loadBlogPosts(); }
+    catch(e){ alert('Could not update: '+(e.message||e)); }
+  };
+})();
+</script>
 </body>
   </html>
 
