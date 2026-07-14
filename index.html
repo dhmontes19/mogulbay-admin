@@ -341,6 +341,9 @@ tr:last-child td { border-bottom: none; }
               <option value="published">Published (live)</option>
             </select>
           </label>
+          <label style="display:flex;align-items:center;gap:9px;font-size:12px;font-weight:600;color:#475569;cursor:pointer">
+            <input type="checkbox" id="bf-featured" style="width:16px;height:16px;cursor:pointer"> Feature this post at the top of the blog homepage
+          </label>
           <label style="font-size:12px;font-weight:600;color:#475569">Title
             <input id="bf-title" oninput="onBlogTitleInput()" style="display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
           </label>
@@ -3632,6 +3635,7 @@ window.outreachLogPage = outreachLogPage;
     window.__blogEditingId=null;
     ['bf-title','bf-slug','bf-category','bf-readtime','bf-cover','bf-cover-alt','bf-meta','bf-takeaways','bf-content'].forEach(function(id){ setField(id,''); });
     setField('bf-status','draft');
+    var _f=document.getElementById('bf-featured'); if(_f) _f.checked=false;
     document.getElementById('blog-delete-btn').style.display='none';
     openEditor();
   };
@@ -3642,6 +3646,7 @@ window.outreachLogPage = outreachLogPage;
     setField('bf-readtime',p.read_time); setField('bf-cover',p.cover_image); setField('bf-cover-alt',p.cover_image_alt);
     setField('bf-meta',p.meta_description); setField('bf-content',p.content_md); setField('bf-status',p.status||'draft');
     setField('bf-takeaways',Array.isArray(p.takeaways)?p.takeaways.join('\n'):'');
+    var _f=document.getElementById('bf-featured'); if(_f) _f.checked=!!p.featured;
     document.getElementById('blog-delete-btn').style.display='inline-block';
     openEditor();
   };
@@ -3696,6 +3701,7 @@ window.outreachLogPage = outreachLogPage;
       content_md:content, category:getField('bf-category').trim()||null,
       read_time:getField('bf-readtime').trim()||null, cover_image:getField('bf-cover').trim()||null,
       cover_image_alt:getField('bf-cover-alt').trim()||null, takeaways:tks.length?tks:null,
+      featured:(document.getElementById('bf-featured')||{}).checked||false,
       status:getField('bf-status'), updated_at:new Date().toISOString() };
     btn.disabled=true; btn.textContent='Saving…';
     try{
