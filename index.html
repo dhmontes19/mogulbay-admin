@@ -149,7 +149,9 @@ tr:last-child td { border-bottom: none; }
     if (k) {
       var d = JSON.parse(localStorage.getItem(k));
       var email = (d && d.user && d.user.email) ? d.user.email.toLowerCase() : '';
-      if (email && !email.endsWith('@mogulbay.com') && email !== 'dhmontes@gmail.com') {
+      // Owner-only allow-list (Syed's @mogulbay.com is intentionally NOT here).
+      var MB_ADMIN_EMAILS = ['dhmontes@mogulbay.com','dhmontes@gmail.com','dhmontes@rcc-bgm.com'];
+      if (email && MB_ADMIN_EMAILS.indexOf(email) < 0) {
         window.location.replace('networth-dashboard.html');
         throw new Error('redirect');
       }
@@ -218,7 +220,8 @@ tr:last-child td { border-bottom: none; }
   }
 
   const email = (session.user.email || '').toLowerCase();
-  const allowed = email.endsWith('@mogulbay.com') || email === 'dhmontes@gmail.com';
+  // Owner-only allow-list — Syed's @mogulbay.com is intentionally excluded from the console.
+  const allowed = ['dhmontes@mogulbay.com','dhmontes@gmail.com','dhmontes@rcc-bgm.com'].indexOf(email) >= 0;
 
   if (!allowed) {
     // Signed in, but not an employee account — do NOT reveal the admin tool.
