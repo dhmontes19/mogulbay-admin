@@ -2267,10 +2267,48 @@ function saveProjectionConfig() {
   config.model.assetOverrides = document.getElementById('asset-override-toggle').checked;
   document.querySelectorAll('.ac-slider').forEach(function(s) { config.assetReturns[s.dataset.class] = parseFloat(s.value); });
   localStorage.setItem('mogulbay_projection_config', JSON.stringify(config));
+
+  // Persist to the BACKEND so the live projection engine actually uses these dials.
+  // (Previously this page only wrote localStorage — the algorithm_config table and
+  // the audit-trail endpoints existed but were never called from here.)
+  (async function() {
+    var btn = document.getElementById('btn-save-projection');
+    try {
+      var token = await getAuthToken();
+      if (!token) throw new Error('not authenticated');
+      var body = {
+        historical_weights: {
+          '1m': config.weights['1m'], '3m': config.weights['1q'],
+          '1y': config.weights['1y'], '5y': config.weights['5y']
+        },
+        economic_factors: {
+          rate: config.econ.rate, outlook: config.econ.outlook,
+          inflation: config.econ.inflation, sentiment: config.econ.sentiment
+        },
+        volatility_settings: {
+          horizon: config.model.horizon, dampening: config.model.volDampening,
+          confidence: config.model.confidence, meanReversion: config.model.meanReversion
+        },
+        asset_class_overrides: config.assetReturns,
+        asset_override_enabled: !!config.model.assetOverrides
+      };
+      var resp = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : 'https://api.mogulbay.com') + '/api/algorithm/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify(body)
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var el2 = document.getElementById('proj-last-saved');
+      if (el2) el2.textContent = 'Saved to server: ' + new Date().toLocaleString();
+      if (btn) { btn.textContent = 'Saved!'; btn.style.background = '#10b981'; setTimeout(function() { btn.textContent = 'Save Configuration'; btn.style.background = '#3b82f6'; }, 2000); }
+    } catch (e) {
+      if (btn) { btn.textContent = 'Server save failed'; btn.style.background = '#ef4444'; setTimeout(function() { btn.textContent = 'Save Configuration'; btn.style.background = '#3b82f6'; }, 2500); }
+      console.error('algorithm save failed:', e);
+    }
+  })();
+
   var el = document.getElementById('proj-last-saved');
   if (el) el.textContent = 'Last saved: ' + new Date().toLocaleString();
-  var btn = document.getElementById('btn-save-projection');
-  if (btn) { btn.textContent = 'Saved!'; btn.style.background = '#10b981'; setTimeout(function() { btn.textContent = 'Save Configuration'; btn.style.background = '#3b82f6'; }, 2000); }
 }
 
 
@@ -2289,7 +2327,50 @@ function resetProjectionDefaults() {
   updateWeightBar(); updateEconLabels(); updateModelLabels(); updateAssetLabels();
 }
 
+async function loadProjectionConfigFromServer() {
+  // Backend is the source of truth; localStorage is only a fallback.
+  try {
+    var token = await getAuthToken();
+    if (!token) return false;
+    var resp = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : 'https://api.mogulbay.com') + '/api/algorithm/config', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!resp.ok) return false;
+    var cfg = await resp.json();
+    if (!cfg) return false;
+    var w = cfg.historical_weights || {};
+    document.querySelectorAll('.proj-slider').forEach(function(sl) {
+      var map = { '1m': w['1m'], '1q': w['3m'], '1y': w['1y'], '5y': w['5y'] };
+      if (map[sl.dataset.period] !== undefined && map[sl.dataset.period] !== null) sl.value = map[sl.dataset.period];
+    });
+    var ec = cfg.economic_factors || {};
+    if (ec.sentiment != null) document.getElementById('econ-sentiment').value = ec.sentiment;
+    if (ec.inflation != null) document.getElementById('econ-inflation').value = ec.inflation;
+    if (ec.rate != null) document.getElementById('econ-rate').value = ec.rate;
+    if (ec.outlook != null) document.getElementById('econ-outlook').value = ec.outlook;
+    var vs = cfg.volatility_settings || {};
+    if (vs.dampening != null) document.getElementById('vol-dampening').value = vs.dampening;
+    if (vs.confidence != null) document.getElementById('confidence-interval').value = vs.confidence;
+    if (vs.meanReversion != null) document.getElementById('mean-reversion').value = vs.meanReversion;
+    if (vs.horizon != null) document.getElementById('proj-horizon').value = vs.horizon;
+    if (cfg.asset_override_enabled != null) document.getElementById('asset-override-toggle').checked = !!cfg.asset_override_enabled;
+    var ac = cfg.asset_class_overrides || {};
+    document.querySelectorAll('.ac-slider').forEach(function(sl) {
+      if (ac[sl.dataset.class] != null) sl.value = ac[sl.dataset.class];
+    });
+    if (typeof updateWeightBar === 'function') updateWeightBar();
+    if (typeof updateEconLabels === 'function') updateEconLabels();
+    if (typeof updateModelLabels === 'function') updateModelLabels();
+    if (typeof updateAssetLabels === 'function') updateAssetLabels();
+    var el = document.getElementById('proj-last-saved');
+    if (el && cfg.updated_at) el.textContent = 'Server config v' + (cfg.version || '?') + ' · ' + new Date(cfg.updated_at).toLocaleString();
+    return true;
+  } catch (e) { console.warn('server config load failed:', e.message); return false; }
+}
+
 function loadProjectionConfig() {
+  // Try the server first; fall back to the old localStorage copy.
+  loadProjectionConfigFromServer().then(function(ok) { if (ok) return; });
   var saved = localStorage.getItem('mogulbay_projection_config');
   if (!saved) return;
   try {
