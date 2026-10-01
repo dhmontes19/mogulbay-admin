@@ -1219,6 +1219,7 @@ tr:last-child td { border-bottom: none; }
               <button id="tpl-delete-btn" onclick="deleteOutreachTemplate()" style="background:none;border:1px solid #fecaca;color:#dc2626;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;display:none">Delete Template</button>
               <div style="display:flex;gap:10px;margin-left:auto">
                 <button onclick="previewTemplateEmail()" style="background:#f1f5f9;color:#0f172a;border:1.5px solid #cbd5e1;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">Preview</button>
+                <button onclick="useImprovedCopy()" title="Replace subject + body with professionally rewritten copy (you can still edit before saving)" style="background:#eff6ff;color:#2563eb;border:1.5px solid #bfdbfe;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">✨ Use improved copy</button>
                 <button onclick="sendTestEmail()" style="background:#f1f5f9;color:#6366f1;border:1.5px solid #c7d2fe;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">Send Test Email</button>
                 <button onclick="closeTemplateEditor()" style="background:#f1f5f9;color:#475569;border:none;padding:8px 20px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">Cancel</button>
                 <button onclick="saveOutreachTemplate()" style="background:#3b82f6;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">Save Template</button>
@@ -2843,18 +2844,67 @@ function buildPreviewHtml(body) {
   for (var k in PREVIEW_SAMPLE_VARS) {
     html = html.replace(new RegExp('\\{\\{\\s*' + k + '\\s*\\}\\}', 'gi'), PREVIEW_SAMPLE_VARS[k]);
   }
-  // Any remaining {{vars}} → a visible placeholder
   html = html.replace(/\{\{[^}]+\}\}/g, '—');
-  // Append the same footer the backend adds, unless the body already has one
-  if (!/unsubscribe/i.test(html)) {
-    html += '<div style="margin-top:28px;padding-top:16px;border-top:1px solid #eee;font-family:Arial,sans-serif;font-size:12px;color:#999;line-height:18px;text-align:center">'
-      + '&copy; ' + new Date().getFullYear() + ' Mogul Bay. All rights reserved.<br>'
-      + "You're receiving this because you have an account with Mogul Bay.<br>"
-      + '<a href="#" style="color:#888;text-decoration:underline">Unsubscribe from these emails</a></div>';
-  }
+  // Replicate the backend's brandEmailShell (server.js) EXACTLY so this preview
+  // shows what recipients actually get: logo header, white card, footer.
+  var year = new Date().getFullYear();
   return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
-    + '<body style="margin:0;padding:20px;font-family:Arial,Helvetica,sans-serif;color:#0f172a;background:#fff">' + html + '</body></html>';
+    + '<body style="margin:0;padding:0;background-color:#eef2f7;">'
+    + '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eef2f7;"><tr><td align="center" style="padding:28px 12px;">'
+    + '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e2e8f0;">'
+    + '<tr><td align="left" style="background-color:#0f172a;padding:18px 32px;">'
+    + '<img src="https://mogulbay.com/assets/images/logos/whiteLogo.png" alt="Mogul Bay" height="26" style="display:block;border:0;height:26px;"></td></tr>'
+    + '<tr><td style="padding:32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#1e293b;">' + html + '</td></tr>'
+    + '<tr><td align="center" style="padding:18px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#94a3b8;">'
+    + '&copy; ' + year + ' Mogul Bay. All rights reserved.<br>'
+    + "You're receiving this because you have an account with Mogul Bay.<br>"
+    + '<a href="#" style="color:#94a3b8;text-decoration:underline;">Unsubscribe from these emails</a></td></tr>'
+    + '</table></td></tr></table></body></html>';
 }
+
+// Rewritten default copy per trigger: short, specific, one CTA, honest claims.
+// The shell adds header/footer, so bodies are inner content only.
+var MB_BTN = 'display:inline-block;background-color:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 24px;border-radius:8px;';
+var TEMPLATE_SUGGESTIONS = {
+  inactive_user: {
+    subject: "Your money kept moving. Here's the latest.",
+    body: '<p style="margin:0 0 16px;">Hi {{name}},</p>'
+      + '<p style="margin:0 0 16px;">Your accounts kept syncing while you were away. Balances, spending and your net worth projection are all up to date and waiting for you.</p>'
+      + '<p style="margin:0 0 8px;">One minute gets you current on:</p>'
+      + '<ul style="margin:0 0 20px;padding-left:20px;"><li>Where your net worth stands today</li><li>What changed across your accounts</li><li>Whether your projection moved</li></ul>'
+      + '<p style="margin:0 0 8px;"><a href="https://mogulbay.com" style="' + MB_BTN + '">See what changed</a></p>'
+  },
+  manual_asset_update: {
+    subject: 'Quick check: are your property values still current?',
+    body: '<p style="margin:0 0 16px;">Hi {{name}},</p>'
+      + '<p style="margin:0 0 16px;">A few of your manually tracked assets haven\'t been updated in a while. Connected accounts update themselves, but values like real estate and business interests only move when you update them.</p>'
+      + '<p style="margin:0 0 20px;">A quick refresh keeps your net worth and your projections honest. It takes about two minutes.</p>'
+      + '<p style="margin:0 0 8px;"><a href="https://mogulbay.com" style="' + MB_BTN + '">Update my assets</a></p>'
+  },
+  new_recurring_charge: {
+    subject: 'New recurring charge: {{merchant}} (${{amount}})',
+    body: '<p style="margin:0 0 16px;">Hi {{name}},</p>'
+      + '<p style="margin:0 0 16px;">We spotted a new recurring charge on one of your accounts: <b>{{merchant}}</b> at <b>${{amount}}</b>.</p>'
+      + '<p style="margin:0 0 20px;">If you signed up for this, no action needed. If it doesn\'t look familiar, it\'s worth a closer look.</p>'
+      + '<p style="margin:0 0 8px;"><a href="https://mogulbay.com" style="' + MB_BTN + '">Review my subscriptions</a></p>'
+  },
+  milestone_reached: {
+    subject: 'You just crossed {{milestone}} 🎉',
+    body: '<p style="margin:0 0 16px;">Hi {{name}},</p>'
+      + '<p style="margin:0 0 16px;">Your net worth just crossed <b>{{milestone}}</b>. That number is the result of saving, investing and paying things down, month after month.</p>'
+      + '<p style="margin:0 0 20px;">Take a second to enjoy it. Then see what the road to the next milestone looks like.</p>'
+      + '<p style="margin:0 0 8px;"><a href="https://mogulbay.com" style="' + MB_BTN + '">See my trajectory</a></p>'
+  }
+};
+function useImprovedCopy() {
+  var key = document.getElementById('tpl-editor-key').value;
+  var sug = TEMPLATE_SUGGESTIONS[key];
+  if (!sug) { alert('No suggested copy for this template type yet.'); return; }
+  document.getElementById('tpl-subject').value = sug.subject;
+  document.getElementById('tpl-body').value = sug.body;
+  previewTemplateEmail();
+}
+window.useImprovedCopy = useImprovedCopy;
 
 function showEmailPreview(subject, body) {
   var modal = document.getElementById('email-preview-modal');
