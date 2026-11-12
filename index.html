@@ -1847,7 +1847,51 @@ async function fetchAdminStats() {
         }
       } catch(e) { console.error('Terms fetch error:', e); }
 
-    tbody.innerHTML = data.users.filter(u => !u.email || !u.email.endsWith(String.fromCharCode(64) + "mogulbay.com")).map(u => {
+    window._adminUsersData = { users: data.users.filter(u => !u.email || !u.email.endsWith(String.fromCharCode(64) + "mogulbay.com")), termsMap: termsMap };
+    renderAdminUsersTable();
+  } catch(e) { console.error('Users fetch error:', e); }
+}
+
+// ── Sortable Registered Users table (2026-11-12): click any column header to sort,
+// click again to flip direction. Arrow shows the active sort.
+window._adminUsersSort = window._adminUsersSort || { key: 'joined', dir: -1 };
+function sortAdminUsers(key) {
+  var s = window._adminUsersSort;
+  if (s.key === key) { s.dir = -s.dir; }
+  else { s.key = key; s.dir = (key === 'name' || key === 'email' || key === 'plan') ? 1 : -1; }
+  renderAdminUsersTable();
+}
+function renderAdminUsersTable() {
+  var bag = window._adminUsersData; if (!bag) return;
+  var termsMap = bag.termsMap || {};
+  var s = window._adminUsersSort;
+  function val(u) {
+    switch (s.key) {
+      case 'name': return (u.full_name || '').toLowerCase();
+      case 'email': return (u.email || '').toLowerCase();
+      case 'plan': { var order = { premium: 3, pro: 2, starter: 1 }; return order[(u.plan || '').toLowerCase()] || 0; }
+      case 'accounts': return u.account_count || 0;
+      case 'assets': return u.asset_count || 0;
+      case 'joined': return u.created_at || '';
+      case 'last_login': return u.last_sign_in_at || '';
+      case 'mua': return termsMap[u.id] && termsMap[u.id].mua ? 1 : 0;
+      case 'privacy': return termsMap[u.id] && termsMap[u.id].privacy_policy ? 1 : 0;
+      default: return 0;
+    }
+  }
+  var users = bag.users.slice().sort(function(a, b) { var A = val(a), B = val(b); return A < B ? -s.dir : A > B ? s.dir : 0; });
+  var tbody = document.getElementById('users-table-body'); if (!tbody) return;
+  var keys = ['name', 'email', 'plan', 'accounts', 'assets', 'joined', 'last_login', 'mua', 'privacy', null, null];
+  var ths = tbody.parentElement.querySelectorAll('thead th');
+  ths.forEach(function(th, i) {
+    var k = keys[i]; if (!k) return;
+    if (!th.dataset.label) th.dataset.label = th.textContent.replace(/[\u25B2\u25BC]/g, '').trim();
+    th.style.cursor = 'pointer';
+    th.title = 'Click to sort';
+    th.onclick = function() { sortAdminUsers(k); };
+    th.textContent = th.dataset.label + (s.key === k ? (s.dir === 1 ? ' \u25B2' : ' \u25BC') : '');
+  });
+  tbody.innerHTML = users.map(u => {
       const initials = (u.full_name || u.email || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
       const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '\u2014';
       const plan = u.plan ? u.plan.charAt(0).toUpperCase() + u.plan.slice(1) : 'Free';
@@ -1870,7 +1914,6 @@ async function fetchAdminStats() {
       + '<td style="padding:12px 16px;text-align:center;"><button onclick="deleteUser(\'' + u.id + '\', \'' + (u.email || '').replace(/'/g, '') + '\')" style="padding:4px 10px;background:#ef4444;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;">Delete</button></td>'
             + '</tr>';
     }).join('');
-  } catch(e) { console.error('Users fetch error:', e); }
 }
 
 // ========== TERMS MANAGEMENT FUNCTIONS ==========
